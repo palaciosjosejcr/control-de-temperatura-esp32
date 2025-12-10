@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Temperaturas IoT</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="bg-slate-900 text-white min-h-screen">
+
+<div class="max-w-lg mx-auto py-6">
+
+    <h1 class="text-2xl font-bold text-center mb-6">Sensores de Temperatura</h1>
+
+    <div id="contenedor" class="space-y-6"></div>
+
+</div>
+
+<!-- Firebase -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getDatabase, ref, onValue } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+    // ---- LEE CONFIG GUARDADA ----
+    const apiKey = localStorage.getItem('iot_api_key');
+    const databaseURL = localStorage.getItem('iot_db_url');
+
+    const firebaseConfig = { apiKey, databaseURL };
+    const app = initializeApp(firebaseConfig);
+    const db = getDatabase(app);
+
+    const panel = document.getElementById("contenedor");
+
+    // Crear UI termómetros
+    function crearTermometro(id) {
+        return `
+            <div class="bg-slate-800 p-4 rounded-xl shadow-lg">
+                <h2 class="text-lg font-bold mb-2">Sensor ${id}</h2>
+                <div class="h-3 w-full bg-slate-700 rounded-full overflow-hidden">
+                    <div id="bar${id}" class="h-full bg-emerald-400 transition-all duration-500"></div>
+                </div>
+                <p id="temp${id}" class="text-center mt-2 text-xl font-mono">-- °C</p>
+            </div>
+        `;
+    }
+
+    // Agregar los 4 sensores
+    for (let i = 1; i <= 4; i++) {
+        panel.innerHTML += crearTermometro(i);
+    }
+
+    // ---- ESCUCHAR CAMBIOS ----
+    const tempRef = ref(db, "temperaturas");
+
+    onValue(tempRef, (snapshot) => {
+        const data = snapshot.val();
+        if (!data) return;
+
+        for (let i = 1; i <= 4; i++) {
+            const valor = data[`sensor${i}`];
+
+            document.getElementById("temp" + i).textContent = valor.toFixed(1) + " °C";
+
+            // barra = 0 a 100°C
+            const porcentaje = Math.min(Math.max(valor, 0), 100);
+
+            document.getElementById("bar" + i).style.width = porcentaje + "%";
+        }
+    });
+</script>
+
+</body>
+</html>
